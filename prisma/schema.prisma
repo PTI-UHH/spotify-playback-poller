@@ -1,0 +1,26 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id    Int     @id @default(autoincrement())
+  user_id String 
+  refresh_token String
+  access_token String
+  playback_data Playback_data[]
+}
+
+model Playback_data {
+  id        Int     @id @default(autoincrement())
+  data   String
+  user    User    @relation(fields: [userId], references: [id])
+  userId  Int @unique
+}
