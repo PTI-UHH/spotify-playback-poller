@@ -4,14 +4,37 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors from "cors";
 import {db} from "./db.js"
+import { Prisma, PrismaClient } from '@prisma/client'
 dotenv.config();
 
+const prisma = new PrismaClient()
+
 const app = express();
+app.use(express.json())
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cors());
 
 let sdk;
+
+
+// app.post("/:userId/auth", async (req, res) => {
+//   const user_id = req.params.userId
+//   console.log(req.body)
+  
+
+//   // req.params.userId, data.access_token, data.refresh_token
+
+//   const user = await prisma.user.create({
+//     data: {
+//       user_id,
+//       access_token: req.body.access_token,
+//       refresh_token: req.body.refresh_tokenx
+//     },
+//   })
+//   res.json(user)
+
+// })
 
 
 app.post("/:userId/auth", async (req, res) => {
@@ -49,10 +72,8 @@ app.post("/:userId/auth", async (req, res) => {
 
 
   }
-
-
-
   console.log("Ok");
+
   res.json({message: "ok"});
 });
 
@@ -131,3 +152,4 @@ setInterval(sampleUsers, 10000);
 app.listen(3001, () => {
   console.log("Example app listening on port 3001!");
 });
+
