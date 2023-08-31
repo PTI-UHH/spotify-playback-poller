@@ -8,6 +8,7 @@ import { Prisma, PrismaClient } from '@prisma/client'
 dotenv.config();
 
 const prisma = new PrismaClient()
+console.log("nachPrisma");
 
 const app = express();
 app.use(express.json())
@@ -17,8 +18,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 let sdk;
 
-
+//TODO Fehler bei auth
 app.post("/:userId/auth", async (req, res) => {
+  console.log("Start");
   const user_id = req.params.userId
 
 
@@ -27,17 +29,20 @@ app.post("/:userId/auth", async (req, res) => {
       user_id: user_id
     },
   })
-  res.json(exists)
+  res.json(exists) //TODO res?
+
   console.log(exists)
   if (exists == null) {
       const user = await prisma.user.create({
     data: {
       user_id,
       access_token: req.body.access_token,
-      refresh_token: req.body.refresh_token
+      refresh_token: req.body.refresh_token,
+      active: true
     },
   }
   )
+
   } 
   // get user id if not existing, create
 
@@ -54,6 +59,7 @@ app.post("/:userId/auth", async (req, res) => {
   
   // 429 rate limit 
 
+  console.log("ok");
 })
 
 // app.put('/:userId/update', async (req, res) => {
@@ -106,6 +112,18 @@ app.post("/:userId/auth", async (req, res) => {
 //   res.json({message: "ok"});
 // });
 
+/*app.post("/:userId/sample", async (req, res) =>{
+  const user_id = req.params.userId
+  const userData = await prisma.user.findUnique({
+    where: {
+      user_id: user_id
+    },
+  })
+  //console.log(userData);
+
+  res(userData);
+});*/
+
 // app.post("/:userId/sample", async (req, res) =>{
 
 //   let sql = `SELECT *
@@ -141,8 +159,33 @@ app.post("/:userId/auth", async (req, res) => {
 //   res.json(playbackState);
 //   //res.json({access_token, refresh_token});
 // });
+async function sampleUsers(){
+  const activeUsers = await prisma.user.findMany({
+    where: {active: true},
+  })
+  console.log(activeUsers)
 
-// async function sampleUsers(){
+  activeUsers.map(async (user) => {
+    const {access_token, refresh_token, user_id} = user;
+    const sdk = SpotifyApi.withAccessToken(process.env.SPOTIFY_CLIENT_ID, {access_token, refresh_token});
+    let playbackState = {}
+    try{
+      playbackState = (await sdk.player.getPlaybackState()) || {};
+     }catch (e){
+       console.log(e.message);
+     }
+
+     await prisma.playback_data.create({
+       data: {
+         user: user_id,
+         data: JSON.stringify(playbackState)},
+     })
+  })
+
+
+//     let playbackState = {}
+  //const {access_token, refresh_token, user_id} = active;
+}
 //   const usersql = "SELECT * FROM users"
 //   const rows = await new Promise((resolve, reject) => db.all(usersql, [], (err, rows) => {
 //     if(err) {
@@ -177,7 +220,7 @@ app.post("/:userId/auth", async (req, res) => {
 
 // }
 
-// setInterval(sampleUsers, 10000);
+setInterval(sampleUsers, 10000);
 app.listen(3001, () => {
   console.log("Example app listening on port 3001!");
 });
