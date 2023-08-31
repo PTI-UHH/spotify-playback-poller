@@ -11,8 +11,7 @@ datasource db {
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  user_id String @unique
+  user_id String @id @unique
   refresh_token String
   access_token String
   playback_data Playback_data[]
@@ -23,5 +22,5 @@ model Playback_data {
   id        Int     @id @default(autoincrement())
   data   String
   user    User    @relation(fields: [userId], references: [user_id])
-  userId  String @unique
+  userId  String 
 }

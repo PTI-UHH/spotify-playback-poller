@@ -177,7 +177,7 @@ async function sampleUsers(){
 
      await prisma.playback_data.create({
        data: {
-         user: user_id,
+         userId: user_id,
          data: JSON.stringify(playbackState)},
      })
   })
