@@ -12,7 +12,7 @@ datasource db {
 
 model User {
   id    Int     @id @default(autoincrement())
-  user_id String 
+  user_id String @unique
   refresh_token String
   access_token String
   playback_data Playback_data[]
