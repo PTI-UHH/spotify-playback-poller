@@ -21,25 +21,49 @@ let sdk;
 app.post("/:userId/auth", async (req, res) => {
   const user_id = req.params.userId
 
-  const user = await prisma.user.create({
+
+  const exists = await prisma.user.findUnique({
+    where: {
+      user_id: user_id
+    },
+  })
+  res.json(exists)
+  console.log(exists)
+  if (exists == null) {
+      const user = await prisma.user.create({
     data: {
       user_id,
       access_token: req.body.access_token,
       refresh_token: req.body.refresh_token
     },
-  })
-  res.json(user)
+  }
+  )
+  } 
+  // get user id if not existing, create
+
+  // const user = await prisma.user.create({
+  //   data: {
+  //     user_id,
+  //     access_token: req.body.access_token,
+  //     refresh_token: req.body.refresh_token
+  //   },
+  // })
+  // res.json(user)
+
+  // 401 expired token
+  
+  // 429 rate limit 
 
 })
 
-app.put('/:userId/update', async (req, res) => {
-  const user_id = req.params.userId
-  const post = await prisma.post.update({
-    where: { user_id },
-    data: { access_token: req.body.access_token},
-  })
-  res.json(post)
-})
+// app.put('/:userId/update', async (req, res) => {
+//   const user_id = req.params.userId
+//   const post = await prisma.post.update({
+//     where: { user_id },
+//     data: { access_token: req.body.access_token},
+//   })
+//   res.json(post)
+// })
 
 
 // app.post("/:userId/auth", async (req, res) => {
