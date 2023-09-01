@@ -11,16 +11,16 @@ datasource db {
 }
 
 model User {
-  id String @id @unique
+  id            String          @id @unique
   refresh_token String
-  access_token String
+  access_token  String
   playback_data Playback_data[]
-  active Boolean
+  active        Boolean
 }
 
 model Playback_data {
-  id        Int     @id @default(autoincrement())
+  id     Int     @id @default(autoincrement())
   data   String
-  user    User    @relation(fields: [userId], references: [id])
-  userId  String 
+  user   User    @relation(fields: [userId], references: [id])
+  userId String
 }
