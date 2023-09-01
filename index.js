@@ -11,31 +11,53 @@ const prisma = new PrismaClient()
 console.log("nachPrisma");
 
 const app = express();
+app.use(cors({
+  origin: 'http://localhost:3000', // TODO: correct origin
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true, // Allow cookies and credentials to be sent with the request (if needed)
+}));
 app.use(express.json())
-app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
+
+
 let sdk;
 
+
+
+app.get('/users', async (req, res) => {
+  const users = await prisma.user.findMany()
+  res.json(users)
+})
+
+
+app.put("/user/:id/active/", async (req, res) => {
+  const  {id}  = req.params
+  const user = await prisma.user.update({
+    where: { id: id },
+    data: { active: req.body.active },
+  })
+  res.json(user)
+})
+
 //TODO Fehler bei auth
-app.post("/:userId/auth", async (req, res) => {
+app.post("/:id/auth", async (req, res) => {
   console.log("Start");
-  const user_id = req.params.userId
+  const id = req.params.id
 
 
   const exists = await prisma.user.findUnique({
     where: {
-      user_id: user_id
+      id: id
     },
   })
   res.json(exists) //TODO res?
 
-  console.log(exists)
   if (exists == null) {
       const user = await prisma.user.create({
     data: {
-      user_id,
+      id,
       access_token: req.body.access_token,
       refresh_token: req.body.refresh_token,
       active: true
@@ -44,7 +66,6 @@ app.post("/:userId/auth", async (req, res) => {
   )
 
   } 
-  // get user id if not existing, create
 
   // const user = await prisma.user.create({
   //   data: {
@@ -159,6 +180,7 @@ app.post("/:userId/auth", async (req, res) => {
 //   res.json(playbackState);
 //   //res.json({access_token, refresh_token});
 // });
+///////////////////////////
 async function sampleUsers(){
   const activeUsers = await prisma.user.findMany({
     where: {active: true},
@@ -166,7 +188,7 @@ async function sampleUsers(){
   console.log(activeUsers)
 
   activeUsers.map(async (user) => {
-    const {access_token, refresh_token, user_id} = user;
+    const {access_token, refresh_token, id} = user;
     const sdk = SpotifyApi.withAccessToken(process.env.SPOTIFY_CLIENT_ID, {access_token, refresh_token});
     let playbackState = {}
     try{
@@ -177,7 +199,7 @@ async function sampleUsers(){
 
      await prisma.playback_data.create({
        data: {
-         userId: user_id,
+         userId: id,
          data: JSON.stringify(playbackState)},
      })
   })
