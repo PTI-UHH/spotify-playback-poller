@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "pm2 start --watch ./src --no-daemon ./src/index.js"
+    "start": "pm2 start --watch ./src --no-daemon ./src/index.js",
+    "docker": "pm2-runtime ./src/index.js",
+    "migrate:deploy": "prisma generate && prisma migrate deploy"
   },
   "author": "",
   "license": "ISC",

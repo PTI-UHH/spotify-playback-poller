@@ -1,0 +1,9 @@
+.dockerignore
+.git
+.gitignore
+.idea
+.env.template
+db.sqlite
+node_modules
+Dockerfile
+prisma/dev.*
