@@ -64,6 +64,15 @@ app.post("/user/:userId/auth", async (req, res) => {
   }
 });
 
+async function updateUser(id, data) {
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data,
+  });
+
+  return updatedUser;
+}
+
 async function getLastestTrack(userId) {
   const foundTracks = await prisma.playbackData.findMany({
     where: { userId },
@@ -71,6 +80,20 @@ async function getLastestTrack(userId) {
   });
 
   return foundTracks.at(0);
+}
+
+async function updateUserForRefreshedTokens(user, sdk) {
+  const { access_token, refresh_token, id } = user;
+
+  const newAccessToken = await sdk.getAccessToken();
+  const wasAccessTokenRefreshed =
+    access_token !== newAccessToken.access_token ||
+    refresh_token !== newAccessToken.refresh_token;
+
+  if (wasAccessTokenRefreshed) {
+    console.log(`User ${id}: Access token was refreshed, updating...`);
+    await updateUser(id, newAccessToken);
+  }
 }
 
 async function saveUserPlaybackState(user) {
@@ -84,6 +107,7 @@ async function saveUserPlaybackState(user) {
 
   try {
     playbackState = await sdk.player.getPlaybackState();
+    updateUserForRefreshedTokens(user, sdk);
   } catch (e) {
     console.error(`User ${id}: ` + e.message);
   }
