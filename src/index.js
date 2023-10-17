@@ -7,6 +7,8 @@ import { PrismaClient } from "@prisma/client";
 
 dotenv.config();
 
+const POLLING_INTERVAL = 10000;
+
 const prisma = new PrismaClient();
 const app = express();
 app.use(express.json());
@@ -62,6 +64,15 @@ app.post("/user/:userId/auth", async (req, res) => {
   }
 });
 
+async function getLastestTrack(userId) {
+  const foundTracks = await prisma.playbackData.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return foundTracks.at(0);
+}
+
 async function saveUserPlaybackState(user) {
   const { access_token, refresh_token, id } = user;
   const sdk = SpotifyApi.withAccessToken(process.env.SPOTIFY_CLIENT_ID, {
@@ -74,16 +85,39 @@ async function saveUserPlaybackState(user) {
   try {
     playbackState = await sdk.player.getPlaybackState();
   } catch (e) {
-    console.error(e.message);
+    console.error(`User ${id}: ` + e.message);
   }
 
   if (playbackState) {
-    await prisma.playbackData.create({
-      data: {
-        userId: id,
-        data: JSON.stringify(playbackState),
-      },
-    });
+    const { item, is_playing, progress_ms } = playbackState;
+
+    if (item && item.type === "track") {
+      const latestTrack = await getLastestTrack(id);
+      const latestTrackData = latestTrack && JSON.parse(latestTrack.data);
+
+      // TODO: evaluate if this makes sense, or if we should just save
+      // duplicate data to not complicate the logic and have to parse the
+      // data again
+      const isSameTrackStillPlayingContinuously =
+        is_playing &&
+        latestTrack &&
+        latestTrack.trackId === item.id &&
+        latestTrackData.progress_ms < progress_ms;
+
+      if (!isSameTrackStillPlayingContinuously) {
+        await prisma.playbackData.create({
+          data: {
+            userId: id,
+            trackId: item.id,
+            data: JSON.stringify(playbackState),
+          },
+        });
+      } else {
+        console.log(
+          `User ${id}: Same track ${item.id} is still playing, skipping update...`
+        );
+      }
+    }
   }
 }
 
@@ -95,7 +129,7 @@ async function savePlaybackDataForAllActiveUsers() {
   await Promise.all(activeUsers.map(saveUserPlaybackState));
 }
 
-setInterval(savePlaybackDataForAllActiveUsers, 10000);
+setInterval(savePlaybackDataForAllActiveUsers, POLLING_INTERVAL);
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
