@@ -4,22 +4,25 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors from "cors";
 import { PrismaClient } from "@prisma/client";
+
 dotenv.config();
 
 const prisma = new PrismaClient();
-console.log("nachPrisma");
-
 const app = express();
-app.use(
-  cors({
-    origin: "http://localhost:3000", // TODO: correct origin
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    credentials: true, // Allow cookies and credentials to be sent with the request (if needed)
-  })
-);
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+if (process.env.NODE_ENV === "development") {
+  // Not required in production, because the frontend is served from the same origin
+  app.use(
+    cors({
+      origin: "http://localhost:3000",
+      methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+      credentials: true, // Allow cookies and credentials to be sent with the request (if needed)
+    })
+  );
+}
 
 app.get("/users", async (req, res) => {
   const users = await prisma.user.findMany();
@@ -230,6 +233,8 @@ async function sampleUsers() {
 // }
 
 setInterval(sampleUsers, 10000);
-app.listen(3001, () => {
-  console.log("Example app listening on port 3001!");
+
+const port = process.env.PORT || 3001;
+app.listen(port, () => {
+  console.log(`Spotify playback poller listening on port ${port}!`);
 });

@@ -2,6 +2,7 @@
 .git
 .gitignore
 .idea
+.env
 .env.template
 db.sqlite
 node_modules
