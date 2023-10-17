@@ -39,18 +39,16 @@ app.put("/user/:id/active", async (req, res) => {
   res.json(user);
 });
 
-//TODO Fehler bei auth
-app.post("/:id/auth", async (req, res) => {
-  console.log("Start");
-  const id = req.params.id;
+app.post("/user/:userId/auth", async (req, res) => {
+  const id = req.params.userId;
 
-  const exists = await prisma.user.findUnique({
+  const existingUser = await prisma.user.findUnique({
     where: { id },
   });
 
-  res.json(exists); //TODO res?
-
-  if (exists == null) {
+  if (existingUser) {
+    res.status(200).json(existingUser);
+  } else {
     const user = await prisma.user.create({
       data: {
         id,
@@ -59,22 +57,9 @@ app.post("/:id/auth", async (req, res) => {
         refresh_token: req.body.refresh_token,
       },
     });
+
+    res.status(201).json(user);
   }
-
-  // const user = await prisma.user.create({
-  //   data: {
-  //     user_id,
-  //     access_token: req.body.access_token,
-  //     refresh_token: req.body.refresh_token
-  //   },
-  // })
-  // res.json(user)
-
-  // 401 expired token
-
-  // 429 rate limit
-
-  console.log("ok");
 });
 
 // app.put('/:userId/update', async (req, res) => {
