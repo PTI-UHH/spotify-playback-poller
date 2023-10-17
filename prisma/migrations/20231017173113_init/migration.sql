@@ -1,17 +1,17 @@
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL PRIMARY KEY,
-    "refresh_token" TEXT NOT NULL,
+    "active" BOOLEAN NOT NULL,
     "access_token" TEXT NOT NULL,
-    "active" BOOLEAN NOT NULL
+    "refresh_token" TEXT NOT NULL
 );
 
 -- CreateTable
-CREATE TABLE "Playback_data" (
+CREATE TABLE "PlaybackData" (
     "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "data" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
-    CONSTRAINT "Playback_data_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "data" TEXT NOT NULL,
+    CONSTRAINT "PlaybackData_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
 -- CreateIndex
