@@ -23,15 +23,16 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 app.get("/users", async (req, res) => {
   const users = await prisma.user.findMany();
+
   res.json(users);
 });
 
-app.put("/user/:id/active/", async (req, res) => {
-  const { id } = req.params;
+app.put("/user/:id/active", async (req, res) => {
   const user = await prisma.user.update({
-    where: { id: id },
+    where: { id: req.params.id },
     data: { active: req.body.active },
   });
+
   res.json(user);
 });
 
@@ -41,19 +42,18 @@ app.post("/:id/auth", async (req, res) => {
   const id = req.params.id;
 
   const exists = await prisma.user.findUnique({
-    where: {
-      id: id,
-    },
+    where: { id },
   });
+
   res.json(exists); //TODO res?
 
   if (exists == null) {
     const user = await prisma.user.create({
       data: {
         id,
+        active: true,
         access_token: req.body.access_token,
         refresh_token: req.body.refresh_token,
-        active: true,
       },
     });
   }
@@ -184,7 +184,7 @@ async function sampleUsers() {
       console.log(e.message);
     }
 
-    await prisma.playback_data.create({
+    await prisma.playbackData.create({
       data: {
         userId: id,
         data: JSON.stringify(playbackState),
