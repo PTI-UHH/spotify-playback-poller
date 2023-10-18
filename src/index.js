@@ -26,8 +26,8 @@ if (process.env.NODE_ENV === "development") {
   );
 }
 
-app.get("/users", async (req, res) => {
-  const users = await prisma.user.findMany();
+app.get("/users", async (_, res) => {
+  const users = await prisma.user.findMany({ include: { accessToken: true } });
 
   res.json(users);
 });
@@ -51,12 +51,20 @@ app.post("/user/:userId/auth", async (req, res) => {
   if (existingUser) {
     res.status(200).json(existingUser);
   } else {
+    const { access_token, refresh_token, scope, expires } = req.body;
+
     const user = await prisma.user.create({
       data: {
         id,
         active: true,
-        access_token: req.body.access_token,
-        refresh_token: req.body.refresh_token,
+        accessToken: {
+          create: {
+            access_token,
+            refresh_token,
+            scope,
+            expires: new Date(expires),
+          },
+        },
       },
     });
 
@@ -73,6 +81,15 @@ async function updateUser(id, data) {
   return updatedUser;
 }
 
+async function updateAccessToken(access_token, data) {
+  const updatedAccessToken = await prisma.accessToken.update({
+    where: { access_token },
+    data,
+  });
+
+  return updatedAccessToken;
+}
+
 async function getLastestTrack(userId) {
   const foundTracks = await prisma.playbackData.findMany({
     where: { userId },
@@ -82,32 +99,39 @@ async function getLastestTrack(userId) {
   return foundTracks.at(0);
 }
 
-async function updateUserForRefreshedTokens(user, sdk) {
-  const { access_token, refresh_token, id } = user;
+async function updateRefreshedTokens(accessToken, sdk) {
+  const { userId, access_token, refresh_token } = accessToken;
 
-  const newAccessToken = await sdk.getAccessToken();
+  const spotifyAccessToken = await sdk.getAccessToken();
   const wasAccessTokenRefreshed =
-    access_token !== newAccessToken.access_token ||
-    refresh_token !== newAccessToken.refresh_token;
+    access_token !== spotifyAccessToken.access_token ||
+    refresh_token !== spotifyAccessToken.refresh_token;
 
   if (wasAccessTokenRefreshed) {
-    console.log(`User ${id}: Access token was refreshed, updating...`);
-    await updateUser(id, newAccessToken);
+    console.log(`User ${userId}: Access token was refreshed, updating...`);
+    const newAccessToken = {
+      userId,
+      access_token: spotifyAccessToken.access_token,
+      refresh_token: spotifyAccessToken.refresh_token,
+      scope: spotifyAccessToken.scope,
+      expires: new Date(spotifyAccessToken.expires),
+    };
+    await updateAccessToken(access_token, newAccessToken);
   }
 }
 
 async function saveUserPlaybackState(user) {
-  const { access_token, refresh_token, id } = user;
-  const sdk = SpotifyApi.withAccessToken(process.env.SPOTIFY_CLIENT_ID, {
-    access_token,
-    refresh_token,
-  });
+  const { id, accessToken } = user;
+  const sdk = SpotifyApi.withAccessToken(
+    process.env.SPOTIFY_CLIENT_ID,
+    accessToken
+  );
 
   let playbackState = {};
 
   try {
     playbackState = await sdk.player.getPlaybackState();
-    updateUserForRefreshedTokens(user, sdk);
+    await updateRefreshedTokens(accessToken, sdk);
   } catch (e) {
     console.error(`User ${id}: ` + e.message);
   }
@@ -148,6 +172,7 @@ async function saveUserPlaybackState(user) {
 async function savePlaybackDataForAllActiveUsers() {
   const activeUsers = await prisma.user.findMany({
     where: { active: true },
+    include: { accessToken: true },
   });
 
   await Promise.all(activeUsers.map(saveUserPlaybackState));
