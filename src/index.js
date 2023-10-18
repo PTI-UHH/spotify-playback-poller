@@ -137,34 +137,16 @@ async function saveUserPlaybackState(user) {
   }
 
   if (playbackState) {
-    const { item, is_playing, progress_ms } = playbackState;
+    const { item } = playbackState;
 
     if (item && item.type === "track") {
-      const latestTrack = await getLastestTrack(id);
-      const latestTrackData = latestTrack && JSON.parse(latestTrack.data);
-
-      // TODO: evaluate if this makes sense, or if we should just save
-      // duplicate data to not complicate the logic and have to parse the
-      // data again
-      const isSameTrackStillPlayingContinuously =
-        is_playing &&
-        latestTrack &&
-        latestTrack.trackId === item.id &&
-        latestTrackData.progress_ms < progress_ms;
-
-      if (!isSameTrackStillPlayingContinuously) {
-        await prisma.playbackData.create({
-          data: {
-            userId: id,
-            trackId: item.id,
-            data: JSON.stringify(playbackState),
-          },
-        });
-      } else {
-        console.log(
-          `User ${id}: Same track ${item.id} is still playing, skipping update...`
-        );
-      }
+      await prisma.playbackData.create({
+        data: {
+          userId: id,
+          trackId: item.id,
+          data: JSON.stringify(playbackState),
+        },
+      });
     }
   }
 }
