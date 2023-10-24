@@ -5,9 +5,14 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// datasource db {
+  // provider = "sqlite"
+  // url      = "file:./dev.db"
+// }
+
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -20,8 +25,8 @@ model User {
 }
 
 model AccessToken {
-  access_token  String   @id @unique
-  refresh_token String
+  access_token  String    @id @unique @db.VarChar(300)
+  refresh_token String    @db.VarChar(300)
   scope         String
   expires       DateTime
   userId        String   @unique
@@ -34,6 +39,6 @@ model PlaybackData {
   userId    String
   trackId   String
   user      User     @relation(fields: [userId], references: [id])
-  data      String
+  data      String   @db.Text
   createdAt DateTime @default(now())
 }
