@@ -33,12 +33,16 @@ app.get("/users", async (_, res) => {
 });
 
 app.put("/user/:id/active", async (req, res) => {
-  const user = await prisma.user.update({
-    where: { id: req.params.id },
-    data: { active: req.body.active },
-  });
+  try {
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data: { active: req.body.active },
+    });
 
-  res.json(user);
+    res.json(user);
+  } catch (e) {
+    res.status(500).send(e.message);
+  }
 });
 
 app.post("/user/:userId/auth", async (req, res) => {
@@ -53,23 +57,27 @@ app.post("/user/:userId/auth", async (req, res) => {
   } else {
     const { email, access_token, refresh_token, scope, expires } = req.body;
 
-    const user = await prisma.user.create({
-      data: {
-        id,
-        active: true,
-        email,
-        accessToken: {
-          create: {
-            access_token,
-            refresh_token,
-            scope,
-            expires: new Date(expires),
+    try {
+      const user = await prisma.user.create({
+        data: {
+          id,
+          active: true,
+          email,
+          accessToken: {
+            create: {
+              access_token,
+              refresh_token,
+              scope,
+              expires: new Date(expires),
+            },
           },
         },
-      },
-    });
+      });
 
-    res.status(201).json(user);
+      res.status(201).json(user);
+    } catch (e) {
+      res.status(500).send(e.message);
+    }
   }
 });
 
