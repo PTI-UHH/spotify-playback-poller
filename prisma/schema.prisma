@@ -17,7 +17,8 @@ datasource db {
 
 model User {
   id           String         @id @unique
-  active       Boolean
+  email        String         @unique
+  active       Boolean        @default(false)
   playbackData PlaybackData[]
   accessToken  AccessToken?
   createdAt    DateTime       @default(now())

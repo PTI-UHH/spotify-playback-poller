@@ -51,12 +51,13 @@ app.post("/user/:userId/auth", async (req, res) => {
   if (existingUser) {
     res.status(200).json(existingUser);
   } else {
-    const { access_token, refresh_token, scope, expires } = req.body;
+    const { email, access_token, refresh_token, scope, expires } = req.body;
 
     const user = await prisma.user.create({
       data: {
         id,
         active: true,
+        email,
         accessToken: {
           create: {
             access_token,
