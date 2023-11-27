@@ -45,18 +45,29 @@ app.put("/user/:id/active", async (req, res) => {
   }
 });
 
-app.post("/user/:userId/auth", async (req, res) => {
+app.put("/user/:userId/auth", async (req, res) => {
   const id = req.params.userId;
+  const { email, access_token, refresh_token, scope, expires } = req.body;
 
   const existingUser = await prisma.user.findUnique({
     where: { id },
   });
 
   if (existingUser) {
-    res.status(200).json(existingUser);
-  } else {
-    const { email, access_token, refresh_token, scope, expires } = req.body;
+    const user = await updateUser(id, {
+      email,
+      accessToken: {
+        update: {
+          access_token,
+          refresh_token,
+          scope,
+          expires: new Date(expires),
+        },
+      },
+    });
 
+    res.status(200).json(user);
+  } else {
     try {
       const user = await prisma.user.create({
         data: {
